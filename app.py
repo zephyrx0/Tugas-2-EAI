@@ -1,4 +1,5 @@
 import datetime
+from sqlite3 import Timestamp
 import jwt
 from flask import Flask, jsonify, request
 from flask_mysqldb import MySQL
@@ -85,6 +86,7 @@ def event():
 
 @app.route('/detailEvent')
 def detail_event():
+    timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     cursor = mysql.connection.cursor()
 
     if 'id' in request.args:
@@ -93,8 +95,11 @@ def detail_event():
     elif 'nama_event' in request.args:
         sql = "SELECT * FROM event WHERE nama_event LIKE %s"
         val = ("%" + request.args['nama_event'] + "%",)
+    elif 'harga_event' in request.args:
+        sql = "SELECT * FROM event WHERE harga_event = %s"
+        val = (request.args['harga_event'],)
     else:
-        return jsonify({"error": "Parameter 'id' atau 'nama_event' diperlukan"}), 400
+        return jsonify({"error": "Parameter diperlukan"}), 400
 
     cursor.execute(sql, val)
 
@@ -105,9 +110,12 @@ def detail_event():
         for row in cursor.fetchall()
     ]
 
+    if not data:
+        return jsonify({"status": "error", "message": "Data tidak ditemukan"}), 404
+
     cursor.close()
 
-    return jsonify({"status": "success", "data": data, "message": "Data berhasil ditemukan"}), 200
+    return jsonify({"status": "success", "data": data, "message": "Data berhasil ditemukan", "timestamp": timestamp}), 200
 
 
 @app.route('/auth')
